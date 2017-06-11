@@ -1,0 +1,15 @@
+version: "3"
+services:
+    vault-a:
+        image: vault:latest
+        environment:
+            - VAULT_DEV_ROOT_TOKEN_ID=deadbeef-vault-a-root
+        ports:
+            - 8201:8200
+    vault-b: 
+        image: vault:latest
+        environment:
+            - VAULT_DEV_ROOT_TOKEN_ID=abbaface-vault-b-root
+        ports:
+            - 8202:8200
+
