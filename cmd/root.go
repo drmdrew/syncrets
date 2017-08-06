@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// RootCmd is the root cobra command for syncrets
 var RootCmd = &cobra.Command{
 	Use:   "subcommand [src] [dst]",
 	Short: "foo is a short command",
@@ -27,12 +28,13 @@ func init() {
 func initConfig() {
 }
 
+// Execute the RootCmd
 func Execute() {
 
 	RootCmd.Execute()
 }
 
-func parseUrl(s string) *url.URL {
+func parseURL(s string) *url.URL {
 	u, err := url.Parse(s)
 	if err != nil {
 		log.Fatal(err)
@@ -40,6 +42,7 @@ func parseUrl(s string) *url.URL {
 	return u
 }
 
+// VaultEndpoint client connection to vault
 type VaultEndpoint struct {
 	client *vaultapi.Client
 }
@@ -76,8 +79,8 @@ func sync(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		log.Fatal("ERROR! source and destination are required!")
 	}
-	src := parseUrl(args[0])
-	dst := parseUrl(args[1])
+	src := parseURL(args[0])
+	dst := parseURL(args[1])
 	fmt.Printf("source: %s, destination: %s\n", src, dst)
 
 	srcClient := newVaultEndpoint(src, "SYNCRETS_SRC_VAULT_TOKEN")

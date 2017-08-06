@@ -28,7 +28,7 @@ func auth(cmd *cobra.Command, args []string) {
 	if len(args) < 1 {
 		log.Fatal("ERROR! source required!")
 	}
-	src := parseUrl(args[0])
+	src := parseURL(args[0])
 	fmt.Printf("source: %s\n", src)
 
 	//	srcClient := newVaultEndpoint(src, "SYNCRETS_SRC_VAULT_TOKEN")

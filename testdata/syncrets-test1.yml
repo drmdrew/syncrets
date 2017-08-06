@@ -1,0 +1,5 @@
+vault:
+    vault-a:
+        url: "http://localhost:8201"
+    vault-b:
+        url: "http://localhost:8202"
