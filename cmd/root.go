@@ -2,23 +2,21 @@ package cmd
 
 import (
 	"fmt"
-	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/spf13/cobra"
 	"log"
 	"net/url"
 	"os"
-)
 
-var (
-	version string
+	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/spf13/cobra"
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "foo [src] [dst]",
+	Use:   "subcommand [src] [dst]",
 	Short: "foo is a short command",
 	Long:  "Foo is a really short command",
 	Run: func(cmd *cobra.Command, args []string) {
-		sync(cmd, args)
+		//		sync(cmd, args)
+		fmt.Println("TODO: root usage")
 	},
 }
 
@@ -87,8 +85,4 @@ func sync(cmd *cobra.Command, args []string) {
 
 	srcClient.list(src.Path)
 	dstClient.list(dst.Path)
-}
-
-func printVersion() {
-	fmt.Printf("version %s\n", version)
 }
