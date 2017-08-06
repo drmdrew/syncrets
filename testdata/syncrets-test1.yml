@@ -1,5 +1,9 @@
 vault:
     vault-a:
-        url: "http://localhost:8201"
+        url: http://localhost:8201
+        auth-method: token
+        token-file: .vault-a-token
     vault-b:
-        url: "http://localhost:8202"
+        url: http://localhost:8202
+        auth-method: token
+        token-file: .vault-b-token

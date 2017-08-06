@@ -24,12 +24,12 @@ var authCmd = &cobra.Command{
 
 func auth(cmd *cobra.Command, args []string) {
 
-	fmt.Printf("args: %v\n", args)
+	log.Printf("args: %v\n", args)
 	if len(args) < 1 {
 		log.Fatal("ERROR! source required!")
 	}
 	src := parseURL(args[0])
-	fmt.Printf("source: %s\n", src)
+	log.Printf("source: %s\n", src)
 
 	//	srcClient := newVaultEndpoint(src, "SYNCRETS_SRC_VAULT_TOKEN")
 	config := vaultapi.DefaultConfig()
@@ -39,6 +39,6 @@ func auth(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 	auth := client.Auth()
-	fmt.Printf("auth: %v\n", auth)
+	log.Printf("auth: %v\n", auth)
 
 }

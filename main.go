@@ -2,14 +2,16 @@ package main
 
 import (
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/drmdrew/syncrets/cmd"
 	"github.com/spf13/viper"
 )
 
 func main() {
+	initViper(viper.GetViper(), "syncrets", getConfigFile())
 	initCobra()
-	initViper("syncrets", "/Users/drew.syncrets")
 }
 
 func initCobra() {
@@ -18,8 +20,11 @@ func initCobra() {
 	}
 }
 
-func initViper(name string, path string) *viper.Viper {
-	v := viper.New()
+func getConfigFile() string {
+	return filepath.Join(os.Getenv("HOME"), ".syncrets")
+}
+
+func initViper(v *viper.Viper, name string, path string) *viper.Viper {
 	v.SetConfigName(name)
 	v.AddConfigPath(path)
 	err := v.ReadInConfig()
