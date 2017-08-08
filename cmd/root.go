@@ -37,7 +37,8 @@ func Execute() {
 func parseURL(s string) *url.URL {
 	u, err := url.Parse(s)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Cannot parse URL: %v\n", s)
+		return nil
 	}
 	return u
 }
@@ -81,6 +82,9 @@ func sync(cmd *cobra.Command, args []string) {
 	}
 	src := parseURL(args[0])
 	dst := parseURL(args[1])
+	if src == nil || dst == nil {
+		log.Fatalf("Error cannot sync from %v to %v\n", src, dst)
+	}
 	fmt.Printf("source: %s, destination: %s\n", src, dst)
 
 	srcClient := newVaultEndpoint(src, "SYNCRETS_SRC_VAULT_TOKEN")
