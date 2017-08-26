@@ -25,22 +25,26 @@ func TestAuth_ResolvesAlias(t *testing.T) {
 	assert.Equal(t, "localhost:8201", auth.url.Host)
 }
 
-type fakeVaultReader struct {
+type fakeVaultClient struct {
 	data map[string]interface{}
 }
 
-func (fvr *fakeVaultReader) Read(path string) (*vaultapi.Secret, error) {
+func (fvr *fakeVaultClient) Read(path string) (*vaultapi.Secret, error) {
 	s := &vaultapi.Secret{}
 	s.Data = fvr.data //make(map[string]interface{})
 	return s, nil
 }
 
+func (fvr *fakeVaultClient) Authenticate() error {
+	// do nothing
+	return nil
+}
+
 func TestAuth_IsValid(t *testing.T) {
 	args := []string{"http://localhost:8200"}
 	auth, err := newAuthenticator(viper.GetViper(), authCmd, args)
-	fvr := &fakeVaultReader{make(map[string]interface{})}
-	auth.reader = fvr
+	fvc := &fakeVaultClient{make(map[string]interface{})}
+	auth.client = fvc
 	assert.Nil(t, err)
 	assert.True(t, auth.isValid())
-
 }

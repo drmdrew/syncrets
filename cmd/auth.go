@@ -3,8 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
+	"strings"
 
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
@@ -14,6 +16,7 @@ import (
 // VaultReader is just the Read portion of the Vault client API
 type VaultReader interface {
 	Read(path string) (*vaultapi.Secret, error)
+	Authenticate(token string) error
 }
 
 // VaultClient is a composite API of all the Vault client APIs as interfaces
@@ -22,18 +25,29 @@ type VaultClient interface {
 }
 
 type authenticator struct {
-	url    *url.URL
-	token  string
-	viper  *viper.Viper
-	reader VaultReader //*vaultapi.Logical
+	hostname string
+	url      *url.URL
+	token    string
+	viper    *viper.Viper
+	client   VaultClient
 }
 
 type vaultClient struct {
-	logical *vaultapi.Logical
+	client *vaultapi.Client
 }
 
-func (vc vaultClient) Read(path string) (*vaultapi.Secret, error) {
-	return vc.logical.Read(path)
+func (vc *vaultClient) Read(path string) (*vaultapi.Secret, error) {
+	return vc.client.Logical().Read(path)
+}
+
+func (vc *vaultClient) Authenticate(token string) error {
+	if token == "" {
+		// TODO: find a better solution to prompt for token
+		fmt.Printf("token: ")
+		fmt.Scanf("%s", &token)
+	}
+	vc.client.SetToken(token)
+	return nil
 }
 
 func init() {
@@ -78,6 +92,7 @@ func newAuthenticator(v *viper.Viper, cmd *cobra.Command, args []string) (*authe
 		return nil, errors.New("cannot parse url")
 	}
 	log.Printf("source: %s\n", auth.url.Hostname())
+	auth.hostname = auth.url.Hostname()
 	url := resolveAlias(v, auth.url.Hostname())
 	if url != nil {
 		log.Printf("using alias: %v\n", url)
@@ -87,7 +102,7 @@ func newAuthenticator(v *viper.Viper, cmd *cobra.Command, args []string) (*authe
 	if err != nil {
 		return nil, err
 	}
-	auth.reader = *client
+	auth.client = client
 	return auth, nil
 }
 
@@ -98,18 +113,30 @@ func newVaultClient(src *url.URL) (*vaultClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: clean this up. prompt for token if not set (for now)
-	var token string
-	fmt.Printf("token: ")
-	fmt.Scanf("%s", &token)
-	client.SetToken(token)
-	vc := &vaultClient{client.Logical()}
+	vc := &vaultClient{client}
 	return vc, nil
 }
 
 func (auth *authenticator) isValid() bool {
+	// load vault token from token-file if one is present
+	vkey := fmt.Sprintf("vault.%s.token-file", auth.hostname)
+	tokenFile := auth.viper.GetString(vkey)
+	token, err := ioutil.ReadFile(tokenFile)
+	log.Printf("%v is configured: %v\n", vkey, tokenFile)
+	if token != nil {
+		trimmedToken := strings.TrimSpace(string(token))
+		log.Printf("token is %s\n", trimmedToken)
+		auth.client.Authenticate(trimmedToken)
+	} else {
+		// make sure the vault client has authenticated
+		if err := auth.client.Authenticate(""); err != nil {
+			log.Printf("authenticate failed: %v\n", err)
+			return false
+		}
+	}
+
 	// use lookup-self to verify token is valid
-	secret, err := auth.reader.Read("auth/token/lookup-self")
+	secret, err := auth.client.Read("auth/token/lookup-self")
 	if err != nil {
 		log.Printf("lookup-self failed: %v\n", err)
 		return false
