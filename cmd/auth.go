@@ -16,12 +16,13 @@ import (
 // VaultReader is just the Read portion of the Vault client API
 type VaultReader interface {
 	Read(path string) (*vaultapi.Secret, error)
-	Authenticate(token string) error
 }
 
 // VaultClient is a composite API of all the Vault client APIs as interfaces
 type VaultClient interface {
 	VaultReader
+	SetToken(token string)
+	PromptForToken()
 }
 
 type authenticator struct {
@@ -40,14 +41,16 @@ func (vc *vaultClient) Read(path string) (*vaultapi.Secret, error) {
 	return vc.client.Logical().Read(path)
 }
 
-func (vc *vaultClient) Authenticate(token string) error {
-	if token == "" {
-		// TODO: find a better solution to prompt for token
-		fmt.Printf("token: ")
-		fmt.Scanf("%s", &token)
-	}
+func (vc *vaultClient) SetToken(token string) {
 	vc.client.SetToken(token)
-	return nil
+}
+
+func (vc *vaultClient) PromptForToken() {
+	// TODO: find a better solution to prompt for token
+	var token string
+	fmt.Printf("token: ")
+	fmt.Scanf("%s", &token)
+	vc.SetToken(token)
 }
 
 func init() {
@@ -126,13 +129,9 @@ func (auth *authenticator) isValid() bool {
 	if token != nil {
 		trimmedToken := strings.TrimSpace(string(token))
 		log.Printf("token is %s\n", trimmedToken)
-		auth.client.Authenticate(trimmedToken)
+		auth.client.SetToken(trimmedToken)
 	} else {
-		// make sure the vault client has authenticated
-		if err := auth.client.Authenticate(""); err != nil {
-			log.Printf("authenticate failed: %v\n", err)
-			return false
-		}
+		auth.client.PromptForToken()
 	}
 
 	// use lookup-self to verify token is valid
