@@ -22,7 +22,7 @@ type VaultReader interface {
 type VaultClient interface {
 	VaultReader
 	SetToken(token string)
-	PromptForToken()
+	PromptForToken() string
 }
 
 type authenticator struct {
@@ -45,12 +45,13 @@ func (vc *vaultClient) SetToken(token string) {
 	vc.client.SetToken(token)
 }
 
-func (vc *vaultClient) PromptForToken() {
+func (vc *vaultClient) PromptForToken() string {
 	// TODO: find a better solution to prompt for token
 	var token string
 	fmt.Printf("token: ")
 	fmt.Scanf("%s", &token)
 	vc.SetToken(token)
+	return token
 }
 
 func init() {
@@ -121,8 +122,8 @@ func newVaultClient(src *url.URL) (*vaultClient, error) {
 }
 
 func (auth *authenticator) isValid() bool {
-	// load vault token from token-file if one is present
-	vkey := fmt.Sprintf("vault.%s.token-file", auth.hostname)
+	// load vault token from token.file if one is present
+	vkey := fmt.Sprintf("vault.%s.token.file", auth.hostname)
 	tokenFile := auth.viper.GetString(vkey)
 	token, err := ioutil.ReadFile(tokenFile)
 	log.Printf("%v is configured: %v\n", vkey, tokenFile)

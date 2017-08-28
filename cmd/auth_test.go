@@ -35,9 +35,12 @@ func (fvr *fakeVaultClient) Read(path string) (*vaultapi.Secret, error) {
 	return s, nil
 }
 
-func (fvr *fakeVaultClient) Authenticate() error {
+func (fvr *fakeVaultClient) SetToken(token string) {
 	// do nothing
-	return nil
+}
+
+func (fvr *fakeVaultClient) PromptForToken() string {
+	return ""
 }
 
 func TestAuth_IsValid(t *testing.T) {
