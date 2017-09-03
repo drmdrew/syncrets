@@ -72,7 +72,7 @@ func newAuthenticator(v *viper.Viper, cmd *cobra.Command, args []string) (*authe
 		log.Printf("using alias: %v\n", url)
 		auth.url = url
 	}
-	client, err := vault.NewVaultClient(auth.url)
+	client, err := vault.NewClient(auth.url)
 	if err != nil {
 		return nil, err
 	}
