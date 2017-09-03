@@ -8,50 +8,17 @@ import (
 	"net/url"
 	"strings"
 
-	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/drmdrew/syncrets/vault"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-// VaultReader is just the Read portion of the Vault client API
-type VaultReader interface {
-	Read(path string) (*vaultapi.Secret, error)
-}
-
-// VaultClient is a composite API of all the Vault client APIs as interfaces
-type VaultClient interface {
-	VaultReader
-	SetToken(token string)
-	PromptForToken() string
-}
 
 type authenticator struct {
 	hostname string
 	url      *url.URL
 	token    string
 	viper    *viper.Viper
-	client   VaultClient
-}
-
-type vaultClient struct {
-	client *vaultapi.Client
-}
-
-func (vc *vaultClient) Read(path string) (*vaultapi.Secret, error) {
-	return vc.client.Logical().Read(path)
-}
-
-func (vc *vaultClient) SetToken(token string) {
-	vc.client.SetToken(token)
-}
-
-func (vc *vaultClient) PromptForToken() string {
-	// TODO: find a better solution to prompt for token
-	var token string
-	fmt.Printf("token: ")
-	fmt.Scanf("%s", &token)
-	vc.SetToken(token)
-	return token
+	client   vault.ClientAPI
 }
 
 func init() {
@@ -66,6 +33,9 @@ var authCmd = &cobra.Command{
 		auth, err := newAuthenticator(viper.GetViper(), cmd, args)
 		if err != nil {
 			log.Fatal(err)
+		}
+		if err := auth.authenticate(); err != nil {
+			log.Fatalf("Authenication failed: %v", err)
 		}
 		if !auth.isValid() {
 			log.Fatal("Authentication has failed!")
@@ -102,7 +72,7 @@ func newAuthenticator(v *viper.Viper, cmd *cobra.Command, args []string) (*authe
 		log.Printf("using alias: %v\n", url)
 		auth.url = url
 	}
-	client, err := newVaultClient(auth.url)
+	client, err := vault.NewVaultClient(auth.url)
 	if err != nil {
 		return nil, err
 	}
@@ -110,31 +80,55 @@ func newAuthenticator(v *viper.Viper, cmd *cobra.Command, args []string) (*authe
 	return auth, nil
 }
 
-func newVaultClient(src *url.URL) (*vaultClient, error) {
-	config := vaultapi.DefaultConfig()
-	config.Address = fmt.Sprintf("%s://%s", "http", src.Host)
-	client, err := vaultapi.NewClient(config)
-	if err != nil {
-		return nil, err
+func (auth *authenticator) authenticate() error {
+	vkey := fmt.Sprintf("vault.%s.auth.method", auth.hostname)
+	method := auth.viper.GetString(vkey)
+	switch method {
+	case "token":
+		auth.getToken()
+	case "userpass":
+		auth.getUserpass()
+	default:
+		return fmt.Errorf("No valid auth.method configured for %s", auth.hostname)
 	}
-	vc := &vaultClient{client}
-	return vc, nil
+	return nil
 }
 
-func (auth *authenticator) isValid() bool {
+func (auth *authenticator) getToken() {
 	// load vault token from token.file if one is present
 	vkey := fmt.Sprintf("vault.%s.token.file", auth.hostname)
 	tokenFile := auth.viper.GetString(vkey)
-	token, err := ioutil.ReadFile(tokenFile)
-	log.Printf("%v is configured: %v\n", vkey, tokenFile)
-	if token != nil {
-		trimmedToken := strings.TrimSpace(string(token))
-		log.Printf("token is %s\n", trimmedToken)
-		auth.client.SetToken(trimmedToken)
-	} else {
-		auth.client.PromptForToken()
+	tokenBytes, err := ioutil.ReadFile(tokenFile)
+	if err != nil {
+		return
 	}
+	log.Printf("%v is configured: %v\n", vkey, tokenFile)
+	var token string
+	if tokenBytes != nil {
+		token = strings.TrimSpace(string(tokenBytes))
+		log.Printf("token is %s\n", token)
+	} else {
+		token = auth.client.Prompt("token: ")
+	}
+	auth.client.SetToken(token)
+}
 
+func (auth *authenticator) getUserpass() {
+	vkey := fmt.Sprintf("vault.%s.auth.username", auth.hostname)
+	username := auth.viper.GetString(vkey)
+	password := auth.client.Prompt("password: ")
+	data := map[string]interface{}{
+		"password": password,
+	}
+	url := fmt.Sprintf("auth/userpass/login/%s", username)
+	result, err := auth.client.Write(url, data)
+	if err != nil {
+		log.Fatalf("Authentication failed: %v", err)
+	}
+	auth.client.SetToken(result.Auth.ClientToken)
+}
+
+func (auth *authenticator) isValid() bool {
 	// use lookup-self to verify token is valid
 	secret, err := auth.client.Read("auth/token/lookup-self")
 	if err != nil {

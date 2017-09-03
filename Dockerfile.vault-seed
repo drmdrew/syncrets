@@ -1,0 +1,5 @@
+FROM vault:latest
+
+COPY ./syncrets-vault-seed.sh /
+
+ENTRYPOINT /syncrets-vault-seed.sh

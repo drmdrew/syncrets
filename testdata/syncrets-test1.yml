@@ -9,3 +9,8 @@ vault:
         auth: token
         token:
             file: .vault-b-token
+    vault-b-user:
+        url: http://localhost:8202
+        auth: user
+        token:
+            file: .vault-b-token
