@@ -76,7 +76,7 @@ func (vc *Client) TokenIsValid() bool {
 // NewClient creates a vaultClient using the supplied URL
 func NewClient(src *url.URL) (*Client, error) {
 	config := vaultapi.DefaultConfig()
-	config.Address = fmt.Sprintf("%s://%s", "http", src.Host)
+	config.Address = fmt.Sprintf("%s://%s", src.Scheme, src.Host)
 	client, err := vaultapi.NewClient(config)
 	if err != nil {
 		return nil, err
