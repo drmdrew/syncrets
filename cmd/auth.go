@@ -41,6 +41,7 @@ var authCmd = &cobra.Command{
 			log.Fatal("Authentication has failed!")
 		}
 		log.Print("Authentication was successful")
+		auth.store()
 	},
 }
 
@@ -80,52 +81,46 @@ func newAuthenticator(v *viper.Viper, cmd *cobra.Command, args []string) (*authe
 	return auth, nil
 }
 
+// prompt the user for information
+func (auth *authenticator) prompt(prompt string) string {
+	var token string
+	fmt.Printf(prompt)
+	fmt.Scanf("%s", &token)
+	return token
+}
+
 func (auth *authenticator) authenticate() error {
+	auth.load()
+	if auth.isValid() {
+		return nil
+	}
+	// re-authenticate if loaded token is invalid
 	vkey := fmt.Sprintf("vault.%s.auth.method", auth.hostname)
 	method := auth.viper.GetString(vkey)
 	switch method {
 	case "token":
-		auth.getToken()
+		auth.tokenAuth()
 	case "userpass":
-		auth.getUserpass()
+		auth.userpassAuth()
 	default:
 		return fmt.Errorf("No valid auth.method configured for %s", auth.hostname)
 	}
 	return nil
 }
 
-func (auth *authenticator) getToken() {
-	// load vault token from token.file if one is present
-	vkey := fmt.Sprintf("vault.%s.token.file", auth.hostname)
-	tokenFile := auth.viper.GetString(vkey)
-	tokenBytes, err := ioutil.ReadFile(tokenFile)
-	if err != nil {
-		return
-	}
-	log.Printf("%v is configured: %v\n", vkey, tokenFile)
-	var token string
-	if tokenBytes != nil {
-		token = strings.TrimSpace(string(tokenBytes))
-		log.Printf("token is %s\n", token)
-	} else {
-		token = auth.client.Prompt("token: ")
-	}
+func (auth *authenticator) tokenAuth() {
+	token := auth.prompt("token: ")
 	auth.client.SetToken(token)
 }
 
-func (auth *authenticator) getUserpass() {
+func (auth *authenticator) userpassAuth() {
 	vkey := fmt.Sprintf("vault.%s.auth.username", auth.hostname)
 	username := auth.viper.GetString(vkey)
-	password := auth.client.Prompt("password: ")
-	data := map[string]interface{}{
-		"password": password,
-	}
-	url := fmt.Sprintf("auth/userpass/login/%s", username)
-	result, err := auth.client.Write(url, data)
+	password := auth.prompt("password: ")
+	err := auth.client.UserpassLogin(username, password)
 	if err != nil {
 		log.Fatalf("Authentication failed: %v", err)
 	}
-	auth.client.SetToken(result.Auth.ClientToken)
 }
 
 func (auth *authenticator) isValid() bool {
@@ -137,4 +132,37 @@ func (auth *authenticator) isValid() bool {
 	}
 	log.Printf("token id: %v\n", secret.Data["id"])
 	return true
+}
+
+func (auth *authenticator) load() (string, error) {
+	// load vault token from token.file if one is present
+	vkey := fmt.Sprintf("vault.%s.token.file", auth.hostname)
+	tokenFile := auth.viper.GetString(vkey)
+	tokenBytes, err := ioutil.ReadFile(tokenFile)
+	if err != nil {
+		return "", err
+	}
+	log.Printf("%v is configured: %v\n", vkey, tokenFile)
+	var token string
+	if tokenBytes != nil {
+		token = strings.TrimSpace(string(tokenBytes))
+		log.Printf("token is %s\n", token)
+	} else {
+		return "", fmt.Errorf("Unable to read token from %s", tokenFile)
+	}
+	auth.client.SetToken(token)
+	return token, nil
+}
+
+func (auth *authenticator) store() {
+	// store the vault token in token.file if one is present
+	vkey := fmt.Sprintf("vault.%s.token.file", auth.hostname)
+	tokenFile := auth.viper.GetString(vkey)
+	token := auth.client.GetToken()
+	err := ioutil.WriteFile(tokenFile, []byte(token), 0600)
+	if err != nil {
+		log.Printf("Failed to store token in %s: %v\n", tokenFile, err)
+		return
+	}
+	log.Printf("Stored updated token %s in %s\n", token, tokenFile)
 }

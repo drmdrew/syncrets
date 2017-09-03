@@ -29,8 +29,16 @@ func (fvr *fakeVaultClient) SetToken(token string) {
 	// do nothing
 }
 
-func (fvr *fakeVaultClient) Prompt(prompt string) string {
+func (fvr *fakeVaultClient) GetToken() string {
 	return ""
+}
+
+func (fvr *fakeVaultClient) UserpassLogin(username string, password string) error {
+	return nil
+}
+
+func (fvr *fakeVaultClient) TokenIsValid() bool {
+	return true
 }
 
 func getViper(file string) *viper.Viper {
