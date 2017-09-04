@@ -16,6 +16,7 @@ type SecretsReader interface {
 // ClientAPI is a composite API of all the Vault client APIs as interfaces
 type ClientAPI interface {
 	SecretsReader
+	List(path string) (*vaultapi.Secret, error)
 	UserpassLogin(username string, password string) error
 	TokenIsValid() bool
 	Write(path string, data map[string]interface{}) (*vaultapi.Secret, error)
@@ -31,6 +32,13 @@ type Client struct {
 // Read a secret from a vault backend
 func (vc *Client) Read(path string) (*vaultapi.Secret, error) {
 	return vc.client.Logical().Read(path)
+}
+
+// List secrets from a vault backend
+func (vc *Client) List(path string) (*vaultapi.Secret, error) {
+	secret, err := vc.client.Logical().List(path)
+	log.Printf("secret.Data: %v\n", secret.Data)
+	return secret, err
 }
 
 // Write secrets to a vault backend
