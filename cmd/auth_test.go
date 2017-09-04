@@ -19,6 +19,12 @@ func (fvr *fakeVaultClient) Read(path string) (*vaultapi.Secret, error) {
 	return s, nil
 }
 
+func (fvr *fakeVaultClient) List(path string) (*vaultapi.Secret, error) {
+	s := &vaultapi.Secret{}
+	s.Data = fvr.data //make(map[string]interface{})
+	return s, nil
+}
+
 func (fvr *fakeVaultClient) Write(path string, data map[string]interface{}) (*vaultapi.Secret, error) {
 	s := &vaultapi.Secret{}
 	s.Data = fvr.data //make(map[string]interface{})
