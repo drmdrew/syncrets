@@ -7,11 +7,8 @@ jobs:
     docker:
       # specify the version
       - image: circleci/golang:1.9
-      - image: hashicorp/http-echo
-        command: [-text, $TEST_MESSAGE]
     working_directory: /go/src/github.com/drmdrew/syncrets
     steps:
       - checkout
       - run: go get -v -t -d ./...
       - run: go test -v ./...
-      - run: curl -v http://localhost:5678/
