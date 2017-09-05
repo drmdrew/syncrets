@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,9 +30,31 @@ var listCmd = &cobra.Command{
 		}
 		log.Print("Authentication was successful")
 		auth.store()
-		secret, err := auth.client.List("secret/")
-		for k, v := range secret.Data {
-			fmt.Printf("%v, %v\n", k, v)
-		}
+		walk(auth, "secret/")
 	},
+}
+
+func walk(auth *authenticator, path string) {
+	var prefixes []string
+	prefixes = append(prefixes, path)
+	for len(prefixes) > 0 {
+		// pop a prefix from the front of the slice
+		var prefix string
+		prefix, prefixes = prefixes[0], prefixes[1:]
+		secret, err := auth.client.List(prefix)
+		if err != nil {
+			continue
+		}
+		if secret != nil {
+			for _, val := range secret.Data["keys"].([]interface{}) {
+				s := val.(string)
+				if strings.HasSuffix(s, "/") {
+					// push a new prefix at the end of the slice
+					prefixes = append(prefixes, prefix+s)
+				} else {
+					fmt.Printf("%s%s\n", prefix, s)
+				}
+			}
+		}
+	}
 }

@@ -37,7 +37,9 @@ func (vc *Client) Read(path string) (*vaultapi.Secret, error) {
 // List secrets from a vault backend
 func (vc *Client) List(path string) (*vaultapi.Secret, error) {
 	secret, err := vc.client.Logical().List(path)
-	log.Printf("secret.Data: %v\n", secret.Data)
+	//	if secret != nil {
+	//		log.Printf("secret.Data: %v\n", secret.Data)
+	//	}
 	return secret, err
 }
 
