@@ -12,12 +12,12 @@ services:
             - VAULT_DEV_ROOT_TOKEN_ID=abbaface-vault-b-root
         ports:
             - 8202:8200
-    vault-b-seed:
+    vault-a-seed:
         build:
             context: ./
             dockerfile: Dockerfile.vault-seed
         image: drmdrew/syncrets-vault-seed:latest
         environment:
-            - VAULT_TOKEN=abbaface-vault-b-root
-            - VAULT_ADDR=http://vault-b:8200
+            - VAULT_TOKEN=deadbeef-vault-a-root
+            - VAULT_ADDR=http://vault-a:8200
 
