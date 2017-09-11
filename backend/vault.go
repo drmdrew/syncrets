@@ -20,16 +20,22 @@ type Vault struct {
 	client   vault.ClientAPI
 }
 
-func newVault(viper *viper.Viper, url *url.URL) (*Vault, error) {
+// NewVault returns a vault instance
+func NewVault(viper *viper.Viper, name string, url *url.URL) (*Vault, error) {
 	v := &Vault{}
 	v.viper = viper
 	client, err := vault.NewClient(url)
 	if err != nil {
 		return nil, err
 	}
-	v.hostname = url.Hostname()
+	v.hostname = name
 	v.client = client
 	return v, nil
+}
+
+// GetClient returns a vault.ClientAPI
+func (v *Vault) GetClient() vault.ClientAPI {
+	return v.client
 }
 
 // prompt the user for information
@@ -43,7 +49,7 @@ func (v *Vault) prompt(prompt string) string {
 
 // Authenticate with the backend vault server
 func (v *Vault) Authenticate() error {
-	v.load()
+	v.Load()
 	if v.IsValid() {
 		return nil
 	}
@@ -90,7 +96,7 @@ func (v *Vault) IsValid() bool {
 	return id != nil
 }
 
-func (v *Vault) load() (string, error) {
+func (v *Vault) Load() (string, error) {
 	// load vault token from token.file if one is present
 	vkey := fmt.Sprintf("vault.%s.token.file", v.hostname)
 	tokenFile := v.viper.GetString(vkey)
@@ -110,7 +116,7 @@ func (v *Vault) load() (string, error) {
 	return token, nil
 }
 
-func (v *Vault) store() {
+func (v *Vault) Store() {
 	// store the vault token in token.file if one is present
 	vkey := fmt.Sprintf("vault.%s.token.file", v.hostname)
 	tokenFile := v.viper.GetString(vkey)
