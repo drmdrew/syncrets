@@ -40,6 +40,7 @@ func resolveArgs(v *viper.Viper, args []string) (*backend.Endpoint, error) {
 	if endpoint.RawURL == nil {
 		return nil, errors.New("cannot parse url")
 	}
+	endpoint.Path = endpoint.RawURL.Path
 	endpoint.Name = endpoint.RawURL.Hostname()
 	u := resolveAlias(v, endpoint.Name)
 	if u != nil {
@@ -48,11 +49,12 @@ func resolveArgs(v *viper.Viper, args []string) (*backend.Endpoint, error) {
 	} else {
 		endpoint.ServerURL = endpoint.RawURL
 	}
+	log.Printf("using endpoint: %v\n", endpoint)
 	return endpoint, nil
 }
 
 // NewVaultBackend returns a vault backend based on the supplied arguments
-func NewVaultBackend(args []string) *backend.Vault {
+func NewVaultBackend(args []string) *backend.Endpoint {
 	var endpoint *backend.Endpoint
 	var vault *backend.Vault
 	var err error
@@ -70,5 +72,6 @@ func NewVaultBackend(args []string) *backend.Vault {
 	}
 	log.Print("Authentication was successful")
 	vault.Store()
-	return vault
+	endpoint.Vault = vault
+	return endpoint
 }

@@ -19,12 +19,14 @@ var listCmd = &cobra.Command{
 	Long:  `List secrets from vault`,
 	Run: func(cmd *cobra.Command, args []string) {
 		vault := core.NewVaultBackend(args)
-		walk(vault, "secret/")
+		walk(vault)
 	},
 }
 
-func walk(vault *backend.Vault, path string) {
+func walk(endpoint *backend.Endpoint) {
 	var prefixes []string
+	path := endpoint.Path
+	vault := endpoint.Vault
 	prefixes = append(prefixes, path)
 	for len(prefixes) > 0 {
 		// pop a prefix from the front of the slice
@@ -41,7 +43,11 @@ func walk(vault *backend.Vault, path string) {
 					// push a new prefix at the end of the slice
 					prefixes = append(prefixes, prefix+s)
 				} else {
-					fmt.Printf("%s%s\n", prefix, s)
+					sep := "/"
+					if strings.HasSuffix(prefix, "/") {
+						sep = ""
+					}
+					fmt.Printf("%s%s%s\n", prefix, sep, s)
 				}
 			}
 		}

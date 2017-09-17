@@ -8,4 +8,5 @@ type Endpoint struct {
 	RawURL    *url.URL
 	ServerURL *url.URL
 	Path      string
+	Vault     *Vault
 }
