@@ -22,10 +22,7 @@ func setupVault(t *testing.T) (*Vault, *mockVaultClient) {
 	}
 	mockVault := &mockVaultClient{}
 	mockVault.data = make(map[string]map[string]interface{}, 1)
-	endpoint := &Endpoint{}
-	endpoint.Name = "vault-a"
-	endpoint.RawURL = u
-	endpoint.ServerURL = u
+	endpoint := &Endpoint{Name: "vault-a", RawURL: u, ServerURL: u}
 	v, err := NewVault(testViper, endpoint)
 	if err != nil {
 		t.Fatal(err)
