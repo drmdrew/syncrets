@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 
+	"github.com/drmdrew/syncrets/backend"
 	"github.com/spf13/viper"
 )
 
@@ -46,4 +47,27 @@ func ResolveArgs(v *viper.Viper, args []string) (string, *url.URL, error) {
 		log.Printf("using alias: %v\n", u)
 	}
 	return hostname, u, nil
+}
+
+// NewVaultBackend ...
+func NewVaultBackend(args []string) *backend.Vault {
+	var hostname string
+	var url *url.URL
+	var vault *backend.Vault
+	var err error
+	if hostname, url, err = ResolveArgs(viper.GetViper(), args); err != nil {
+		log.Fatal(err)
+	}
+	if vault, err = backend.NewVault(viper.GetViper(), hostname, url); err != nil {
+		log.Fatal(err)
+	}
+	if err = vault.Authenticate(); err != nil {
+		log.Fatalf("Authenication failed: %v", err)
+	}
+	if !vault.IsValid() {
+		log.Fatal("Authentication has failed!")
+	}
+	log.Print("Authentication was successful")
+	vault.Store()
+	return vault
 }
