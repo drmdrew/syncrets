@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/drmdrew/syncrets/core"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
 )
@@ -32,15 +33,6 @@ func initConfig() {
 func Execute() {
 
 	RootCmd.Execute()
-}
-
-func parseURL(s string) *url.URL {
-	u, err := url.Parse(s)
-	if err != nil {
-		log.Printf("Cannot parse URL: %v\n", s)
-		return nil
-	}
-	return u
 }
 
 // VaultEndpoint client connection to vault
@@ -80,8 +72,8 @@ func sync(cmd *cobra.Command, args []string) {
 	if len(args) < 2 {
 		log.Fatal("ERROR! source and destination are required!")
 	}
-	src := parseURL(args[0])
-	dst := parseURL(args[1])
+	src := core.ParseURL(args[0])
+	dst := core.ParseURL(args[1])
 	if src == nil || dst == nil {
 		log.Fatalf("Error cannot sync from %v to %v\n", src, dst)
 	}

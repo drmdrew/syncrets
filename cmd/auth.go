@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
 	"log"
 	"net/url"
 
 	"github.com/drmdrew/syncrets/backend"
+
+	"github.com/drmdrew/syncrets/core"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,11 +20,17 @@ var authCmd = &cobra.Command{
 	Short: "Authenticate with a system providing secrets",
 	Long:  `Authenticate with a system providing secrets`,
 	Run: func(cmd *cobra.Command, args []string) {
-		vault, err := newVault(viper.GetViper(), cmd, args)
-		if err != nil {
+		var hostname string
+		var url *url.URL
+		var vault *backend.Vault
+		var err error
+		if hostname, url, err = core.ResolveArgs(viper.GetViper(), args); err != nil {
 			log.Fatal(err)
 		}
-		if err := vault.Authenticate(); err != nil {
+		if vault, err = backend.NewVault(viper.GetViper(), hostname, url); err != nil {
+			log.Fatal(err)
+		}
+		if err = vault.Authenticate(); err != nil {
 			log.Fatalf("Authenication failed: %v", err)
 		}
 		if !vault.IsValid() {
@@ -33,31 +39,4 @@ var authCmd = &cobra.Command{
 		log.Print("Authentication was successful")
 		vault.Store()
 	},
-}
-
-func resolveAlias(v *viper.Viper, alias string) *url.URL {
-	vkey := fmt.Sprintf("vault.%s.url", alias)
-	vurl := v.GetString(vkey)
-	log.Printf("Checking for alias: %v", vkey)
-	if vurl != "" {
-		log.Printf("using alias: %s\n", vurl)
-		return parseURL(vurl)
-	}
-	return nil
-}
-
-func newVault(v *viper.Viper, cmd *cobra.Command, args []string) (*backend.Vault, error) {
-	if len(args) < 1 {
-		return nil, errors.New("source argument is missing")
-	}
-	u := parseURL(args[0])
-	if u == nil {
-		return nil, errors.New("cannot parse url")
-	}
-	hostname := u.Hostname()
-	u = resolveAlias(v, hostname)
-	if u != nil {
-		log.Printf("using alias: %v\n", u)
-	}
-	return backend.NewVault(v, hostname, u)
 }

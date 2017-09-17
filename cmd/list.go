@@ -3,9 +3,11 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/drmdrew/syncrets/backend"
+	"github.com/drmdrew/syncrets/core"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -19,11 +21,17 @@ var listCmd = &cobra.Command{
 	Short: "List secrets from vault",
 	Long:  `List secrets from vault`,
 	Run: func(cmd *cobra.Command, args []string) {
-		vault, err := newVault(viper.GetViper(), cmd, args)
-		if err != nil {
+		var hostname string
+		var url *url.URL
+		var vault *backend.Vault
+		var err error
+		if hostname, url, err = core.ResolveArgs(viper.GetViper(), args); err != nil {
 			log.Fatal(err)
 		}
-		if err := vault.Authenticate(); err != nil {
+		if vault, err = backend.NewVault(viper.GetViper(), hostname, url); err != nil {
+			log.Fatal(err)
+		}
+		if err = vault.Authenticate(); err != nil {
 			log.Fatalf("Authenication failed: %v", err)
 		}
 		if !vault.IsValid() {
