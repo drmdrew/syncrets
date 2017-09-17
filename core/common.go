@@ -10,55 +10,56 @@ import (
 	"github.com/spf13/viper"
 )
 
-// ...
-func ParseURL(s string) *url.URL {
+func parseURL(s string) *url.URL {
 	u, err := url.Parse(s)
 	if err != nil {
 		log.Printf("Cannot parse URL: %v\n", s)
 		return nil
 	}
+	log.Printf("Parsed URL: %v\n", u)
 	return u
 }
 
-// ...
-func ResolveAlias(v *viper.Viper, alias string) *url.URL {
+func resolveAlias(v *viper.Viper, alias string) *url.URL {
 	vkey := fmt.Sprintf("vault.%s.url", alias)
 	vurl := v.GetString(vkey)
 	log.Printf("Checking for alias: %v", vkey)
 	if vurl != "" {
 		log.Printf("using alias: %s\n", vurl)
-		return ParseURL(vurl)
+		return parseURL(vurl)
 	}
 	return nil
 }
 
-// ...
-func ResolveArgs(v *viper.Viper, args []string) (string, *url.URL, error) {
+func resolveArgs(v *viper.Viper, args []string) (*backend.Endpoint, error) {
 	if len(args) < 1 {
-		return "", nil, errors.New("source argument is missing")
+		return nil, errors.New("source argument is missing")
 	}
-	u := ParseURL(args[0])
-	if u == nil {
-		return "", nil, errors.New("cannot parse url")
+	endpoint := &backend.Endpoint{}
+	endpoint.RawURL = parseURL(args[0])
+	if endpoint.RawURL == nil {
+		return nil, errors.New("cannot parse url")
 	}
-	hostname := u.Hostname()
-	u = ResolveAlias(v, hostname)
+	endpoint.Name = endpoint.RawURL.Hostname()
+	u := resolveAlias(v, endpoint.Name)
 	if u != nil {
 		log.Printf("using alias: %v\n", u)
+		endpoint.ServerURL = u
+	} else {
+		endpoint.ServerURL = endpoint.RawURL
 	}
-	return hostname, u, nil
+	return endpoint, nil
 }
 
-// NewVaultBackend ...
+// NewVaultBackend returns a vault backend based on the supplied arguments
 func NewVaultBackend(args []string) *backend.Vault {
-	var hostname string
-	var url *url.URL
+	var endpoint *backend.Endpoint
 	var vault *backend.Vault
 	var err error
-	if hostname, url, err = ResolveArgs(viper.GetViper(), args); err != nil {
+	if endpoint, err = resolveArgs(viper.GetViper(), args); err != nil {
 		log.Fatal(err)
 	}
-	if vault, err = backend.NewVault(viper.GetViper(), hostname, url); err != nil {
+	if vault, err = backend.NewVault(viper.GetViper(), endpoint); err != nil {
 		log.Fatal(err)
 	}
 	if err = vault.Authenticate(); err != nil {

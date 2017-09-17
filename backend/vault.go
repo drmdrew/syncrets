@@ -21,14 +21,14 @@ type Vault struct {
 }
 
 // NewVault returns a vault instance
-func NewVault(viper *viper.Viper, name string, url *url.URL) (*Vault, error) {
+func NewVault(viper *viper.Viper, endpoint *Endpoint) (*Vault, error) {
 	v := &Vault{}
 	v.viper = viper
-	client, err := vault.NewClient(url)
+	client, err := vault.NewClient(endpoint.ServerURL)
 	if err != nil {
 		return nil, err
 	}
-	v.hostname = name
+	v.hostname = endpoint.Name
 	v.client = client
 	return v, nil
 }
