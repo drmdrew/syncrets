@@ -10,24 +10,26 @@ import (
 )
 
 func init() {
-	RootCmd.AddCommand(listCmd)
+	RootCmd.AddCommand(syncCmd)
 }
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List secrets from vault",
-	Long:  `List secrets from vault`,
+var syncCmd = &cobra.Command{
+	Use:   "sync",
+	Short: "Sync secrets from vault",
+	Long:  `Sync secrets from vault`,
 	Run: func(cmd *cobra.Command, args []string) {
 		srcArgs := args[0:1]
 		src := core.NewVaultBackend(srcArgs)
-		walk(src)
+		dstArgs := args[1:2]
+		dst := core.NewVaultBackend(dstArgs)
+		sync(src, dst)
 	},
 }
 
-func walk(endpoint *backend.Endpoint) {
+func sync(src, dst *backend.Endpoint) {
 	var prefixes []string
-	path := endpoint.Path
-	vault := endpoint.Vault
+	path := src.Path
+	vault := src.Vault
 	prefixes = append(prefixes, path)
 	for len(prefixes) > 0 {
 		// pop a prefix from the front of the slice
@@ -44,11 +46,24 @@ func walk(endpoint *backend.Endpoint) {
 					// push a new prefix at the end of the slice
 					prefixes = append(prefixes, prefix+s)
 				} else {
+					// this leaf has a secret value...
+					// ... now print it
 					sep := "/"
 					if strings.HasSuffix(prefix, "/") {
 						sep = ""
 					}
-					fmt.Printf("%s%s%s: %v\n", prefix, sep, s, secret)
+					path := fmt.Sprintf("%s%s%s", prefix, sep, s)
+					fmt.Printf("%s\n", path)
+					// ... so copy it to dst vault
+					value, err := vault.GetClient().Read(path)
+					if value != nil {
+						fmt.Printf("   -> value.Data['value']: %s\n", value.Data["value"])
+						data := value.Data
+						bValue, bErr := dst.Vault.GetClient().Write(path, data)
+						fmt.Printf("   -> written to destination, path=%s, secret=%v, err=%v\n", path, bValue, bErr)
+					} else {
+						fmt.Printf("   !! err: %v\n", err)
+					}
 				}
 			}
 		}
