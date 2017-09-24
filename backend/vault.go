@@ -6,12 +6,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/url"
+	"os"
 	"strings"
+	"syscall"
 
 	"github.com/drmdrew/syncrets/core"
 	"github.com/spf13/viper"
 
 	vaultapi "github.com/hashicorp/vault/api"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // Vault implements the syncrets vault backend
@@ -23,6 +26,7 @@ type Vault struct {
 	token   string
 	viper   *viper.Viper
 	client  VaultAPI
+	isValid *bool
 }
 
 // SecretsReader is just the Read portion of the Vault client API
@@ -49,9 +53,8 @@ type Client struct {
 
 var newClientFunc = NewVaultClient
 
-// NewClient creates a vaultClient using the supplied URL
+// NewVaultClient creates a vaultClient using the supplied URL
 func NewVaultClient(src *url.URL) (VaultAPI, error) {
-	log.Printf("NewClient: making a *real* vault client...")
 	config := vaultapi.DefaultConfig()
 	config.Address = fmt.Sprintf("%s://%s", src.Scheme, src.Host)
 	client, err := vaultapi.NewClient(config)
@@ -149,10 +152,12 @@ func (v *Vault) GetRawURL() *url.URL {
 // prompt the user for information
 func (v *Vault) prompt(prompt string) string {
 	log.Printf("Prompting for user input: %s\n", prompt)
-	var token string
 	fmt.Printf(prompt)
-	fmt.Scanf("%s", &token)
-	return token
+	bytes, err := terminal.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		log.Fatalf("Error reading response to prompt: %v\n", err)
+	}
+	return string(bytes)
 }
 
 // Authenticate with the backend vault server
@@ -170,9 +175,21 @@ func (v *Vault) Authenticate() error {
 	case "userpass":
 		v.userpassAuth()
 	default:
-		return fmt.Errorf("No valid auth.method configured for '%s'", v.name)
+		log.Printf("Unknown auth.method '%s' configured for '%s'\n", method, v.name)
+		if _, hasEnv := os.LookupEnv("VAULT_TOKEN"); hasEnv {
+			log.Printf("Using VAULT_TOKEN environment variable\n")
+			v.envAuth()
+		} else {
+			log.Printf("Defaulting to 'token' authentication\n")
+			v.tokenAuth()
+		}
 	}
 	return nil
+}
+
+func (v *Vault) envAuth() {
+	token := os.Getenv("VAULT_TOKEN")
+	v.client.SetToken(token)
 }
 
 func (v *Vault) tokenAuth() {
@@ -192,22 +209,30 @@ func (v *Vault) userpassAuth() {
 
 // IsValid checks if the session with the backend is still valid
 func (v *Vault) IsValid() bool {
+	if v.isValid != nil {
+		return *v.isValid
+	}
 	// use lookup-self to verify token is valid
+	valid := false
 	secret, err := v.client.Read("auth/token/lookup-self")
 	if err != nil {
 		log.Printf("lookup-self failed: %v\n", err)
-		return false
+	} else {
+		id := secret.Data["id"]
+		valid = id != nil
+		log.Printf("lookup-self returned %t, accessor: %v\n", valid, secret.Data["accessor"])
 	}
-	id := secret.Data["id"]
-	log.Printf("data: %v\n", secret.Data)
-	log.Printf("token id: %v\n", id)
-	return id != nil
+	v.isValid = &valid
+	return *v.isValid
 }
 
 func (v *Vault) Load() (string, error) {
 	// load vault token from token.file if one is present
 	vkey := fmt.Sprintf("vault.%s.token.file", v.name)
 	tokenFile := v.viper.GetString(vkey)
+	if tokenFile == "" {
+		return "", fmt.Errorf("No token defined for %v", vkey)
+	}
 	tokenBytes, err := ioutil.ReadFile(tokenFile)
 	if err != nil {
 		log.Printf("Error reading file %v: %v\n", tokenFile, err)
@@ -217,7 +242,6 @@ func (v *Vault) Load() (string, error) {
 	var token string
 	if tokenBytes != nil {
 		token = strings.TrimSpace(string(tokenBytes))
-		log.Printf("token is %s\n", token)
 	} else {
 		return "", fmt.Errorf("Unable to read token from %s", tokenFile)
 	}
@@ -229,13 +253,17 @@ func (v *Vault) Store() {
 	// store the vault token in token.file if one is present
 	vkey := fmt.Sprintf("vault.%s.token.file", v.name)
 	tokenFile := v.viper.GetString(vkey)
+	if tokenFile == "" {
+		log.Printf("Not storing token. No token file configured for %s\n", vkey)
+		return
+	}
 	token := v.client.GetToken()
 	err := ioutil.WriteFile(tokenFile, []byte(token), 0600)
 	if err != nil {
-		log.Printf("Failed to store token in %s: %v\n", tokenFile, err)
+		log.Printf("Failed to write token file '%s': %v\n", tokenFile, err)
 		return
 	}
-	log.Printf("Stored updated token %s in %s\n", token, tokenFile)
+	log.Printf("Stored updated token in %s\n", tokenFile)
 }
 
 func (src *Vault) Write(secret core.Secret) error {
@@ -309,7 +337,6 @@ func (v *Vault) resolveArgs(args []string) error {
 	v.name = v.origURL.Hostname()
 	u := core.ResolveAlias(v.viper, v.name)
 	if u != nil {
-		log.Printf("using alias: %v\n", u)
 		v.url = u
 	} else {
 		v.url = v.origURL
