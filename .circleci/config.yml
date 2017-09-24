@@ -10,5 +10,7 @@ jobs:
     working_directory: /go/src/github.com/drmdrew/syncrets
     steps:
       - checkout
+      - run: cat VERSION | sed "s/BUILD/$CIRCLE_BUILD_NUM/g" > VERSION
       - run: go get -v -t -d ./...
+      - run: make build
       - run: go test -v ./...

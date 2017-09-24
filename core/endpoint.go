@@ -22,4 +22,5 @@ type Endpoint interface {
 	GetPath() string
 	Walk(visitor Visitor)
 	Write(secret Secret) error
+	Delete(secret Secret) error
 }

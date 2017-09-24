@@ -32,6 +32,11 @@ func (v *mockVaultClient) Write(path string, data map[string]interface{}) (*vaul
 	return s, nil
 }
 
+func (v *mockVaultClient) Delete(path string) (*vaultapi.Secret, error) {
+	s := &vaultapi.Secret{}
+	return s, nil
+}
+
 func (v *mockVaultClient) SetToken(token string) {
 	v.token = token
 }

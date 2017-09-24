@@ -37,6 +37,7 @@ type VaultAPI interface {
 	UserpassLogin(username string, password string) error
 	TokenIsValid() bool
 	Write(path string, data map[string]interface{}) (*vaultapi.Secret, error)
+	Delete(path string) (*vaultapi.Secret, error)
 	GetToken() string
 	SetToken(token string)
 }
@@ -78,6 +79,11 @@ func (vc *Client) List(path string) (*vaultapi.Secret, error) {
 // Write secrets to a vault backend
 func (vc *Client) Write(path string, data map[string]interface{}) (*vaultapi.Secret, error) {
 	return vc.client.Logical().Write(path, data)
+}
+
+// Delete secret from a vault backend
+func (vc *Client) Delete(path string) (*vaultapi.Secret, error) {
+	return vc.client.Logical().Delete(path)
 }
 
 // SetToken sets the token for authentication with a vault backend
@@ -237,6 +243,11 @@ func (src *Vault) Write(secret core.Secret) error {
 		"value": secret.Value,
 	}
 	_, err := src.GetClient().Write(secret.Path, data)
+	return err
+}
+
+func (src *Vault) Delete(secret core.Secret) error {
+	_, err := src.GetClient().Delete(secret.Path)
 	return err
 }
 
