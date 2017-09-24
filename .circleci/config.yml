@@ -11,8 +11,9 @@ jobs:
     steps:
       - checkout
       - run: |
+            ls -la
             cat VERSION | sed "s/BUILD/$CIRCLE_BUILD_NUM/g" > VERSION
-            echo "VERSION: $VERION"
+            echo "VERSION: $VERSION"
       - run: go get -v -t -d ./...
       - run: make build
       - run: go test -v ./...
