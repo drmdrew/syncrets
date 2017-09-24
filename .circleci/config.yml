@@ -13,7 +13,7 @@ jobs:
       - run: |
              if [ "$CIRCLE_BUILD_NUM" != "" ]; then
                 cp VERSION VERSION.orig
-                (cat VERSION.orig | sed s/BUILD/${CIRCLE_BUILD_NUMBER}/g) > VERSION
+                (cat VERSION.orig | sed s/BUILD/${CIRCLE_BUILD_NUM}/g) > VERSION
                 echo "Updating VERSION: $(cat VERSION)"
              fi
       - run: go get -v -t -d ./...
