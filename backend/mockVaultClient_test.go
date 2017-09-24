@@ -1,6 +1,8 @@
 package backend
 
 import (
+	"log"
+
 	vaultapi "github.com/hashicorp/vault/api"
 )
 
@@ -13,6 +15,8 @@ type mockVaultClient struct {
 func (v *mockVaultClient) Read(path string) (*vaultapi.Secret, error) {
 	s := &vaultapi.Secret{}
 	s.Data = v.data[path] //make(map[string]interface{})
+	log.Printf("mock vault data: %v", v.data)
+	log.Printf("mock vault client Read(%s) => %v", path, s.Data)
 	return s, nil
 }
 

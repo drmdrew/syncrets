@@ -1,8 +1,11 @@
 package cmd
 
 import (
-	"github.com/drmdrew/syncrets/core"
+	"log"
+
+	"github.com/drmdrew/syncrets/backend"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -14,6 +17,9 @@ var authCmd = &cobra.Command{
 	Short: "Authenticate with a system providing secrets",
 	Long:  `Authenticate with a system providing secrets`,
 	Run: func(cmd *cobra.Command, args []string) {
-		core.NewVaultBackend(args)
+		_, err := backend.NewVaultBackend(viper.GetViper(), args)
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }
