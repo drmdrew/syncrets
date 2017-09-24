@@ -10,12 +10,14 @@ jobs:
     working_directory: /go/src/github.com/drmdrew/syncrets
     steps:
       - checkout
-      - run: |
-             if [ "$CIRCLE_BUILD_NUM" != "" ]; then
-                cp VERSION VERSION.orig
-                (cat VERSION.orig | sed s/BUILD/${CIRCLE_BUILD_NUM}/g) > VERSION
-                echo "Updating VERSION: $(cat VERSION)"
-             fi
+      - run:
+          name: Update VERSION file
+          command: |
+            if [ "$CIRCLE_BUILD_NUM" != "" ]; then
+              cp VERSION VERSION.orig
+              (cat VERSION.orig | sed s/BUILD/${CIRCLE_BUILD_NUM}/g) > VERSION
+              echo "Updating VERSION: $(cat VERSION)"
+            fi
       - run: go get -v -t -d ./...
       - run: make build
       - run: go test -v ./...
