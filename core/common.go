@@ -25,7 +25,7 @@ func ResolveAlias(v *viper.Viper, alias string) *url.URL {
 	vurl := v.GetString(vkey)
 	log.Printf("Checking for alias: %v", vkey)
 	if vurl != "" {
-		log.Printf("using alias: %s\n", vurl)
+		log.Printf("Found an alias: %s\n", vurl)
 		return ParseURL(vurl)
 	}
 	return nil
