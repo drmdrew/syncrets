@@ -1,0 +1,6 @@
+syncrets
+debug
+debug.*
+.vault*
+.vscode/
+
