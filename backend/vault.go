@@ -16,13 +16,13 @@ import (
 
 // Vault implements the syncrets vault backend
 type Vault struct {
-	name   string
-	url    *url.URL
-	rawURL *url.URL
-	path   string
-	token  string
-	viper  *viper.Viper
-	client VaultAPI
+	name    string
+	url     *url.URL
+	origURL *url.URL
+	path    string
+	token   string
+	viper   *viper.Viper
+	client  VaultAPI
 }
 
 // SecretsReader is just the Read portion of the Vault client API
@@ -137,7 +137,7 @@ func (v *Vault) GetURL() *url.URL {
 
 // GetClient returns a VaultAPI
 func (v *Vault) GetRawURL() *url.URL {
-	return v.rawURL
+	return v.origURL
 }
 
 // prompt the user for information
@@ -290,18 +290,18 @@ func (v *Vault) resolveArgs(args []string) error {
 	if len(args) < 1 {
 		return errors.New("source argument is missing")
 	}
-	v.rawURL = core.ParseURL(args[0])
-	if v.rawURL == nil {
+	v.origURL = core.ParseURL(args[0])
+	if v.origURL == nil {
 		return errors.New("cannot parse url")
 	}
-	v.path = v.rawURL.Path
-	v.name = v.rawURL.Hostname()
+	v.path = v.origURL.Path
+	v.name = v.origURL.Hostname()
 	u := core.ResolveAlias(v.viper, v.name)
 	if u != nil {
 		log.Printf("using alias: %v\n", u)
 		v.url = u
 	} else {
-		v.url = v.rawURL
+		v.url = v.origURL
 	}
 	log.Printf("%s using url: %v\n", v.name, v.url)
 	return nil
