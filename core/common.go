@@ -30,3 +30,16 @@ func ResolveAlias(v *viper.Viper, alias string) *url.URL {
 	}
 	return nil
 }
+
+// ReverseLookupAlias from a URL
+func ReverseLookupAlias(v *viper.Viper, u *url.URL) string {
+	urlMap := make(map[string]string, 1)
+	aliases := v.GetStringMap("vault")
+	for alias := range aliases {
+		vkey := fmt.Sprintf("vault.%s.url", alias)
+		aliasURL := v.GetString(vkey)
+		urlMap[aliasURL] = alias
+	}
+	uStr := fmt.Sprintf("%s://%s:%s", u.Scheme, u.Hostname(), u.Port())
+	return urlMap[uStr]
+}
