@@ -334,13 +334,17 @@ func (v *Vault) resolveArgs(args []string) error {
 		return errors.New("cannot parse url")
 	}
 	v.path = v.origURL.Path
-	v.name = v.origURL.Hostname()
-	u := core.ResolveAlias(v.viper, v.name)
+	alias := core.ReverseLookupAlias(v.viper, v.origURL)
+	if alias == "" {
+		alias = v.origURL.Hostname()
+	}
+	u := core.ResolveAlias(v.viper, alias)
 	if u != nil {
 		v.url = u
 	} else {
 		v.url = v.origURL
 	}
+	v.name = alias
 	log.Printf("%s using url: %v\n", v.name, v.url)
 	return nil
 }
