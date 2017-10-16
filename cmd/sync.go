@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/drmdrew/syncrets/backend"
 	"github.com/drmdrew/syncrets/core"
@@ -27,12 +29,18 @@ var syncCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 		dstArgs := args[1:2]
-		dst, err := backend.NewVaultBackend(viper.GetViper(), dstArgs)
-		if err != nil {
-			log.Fatal(err)
+		if strings.HasSuffix(dstArgs[0], ".json") {
+			sync := &jsoner{make(map[string]interface{})}
+			src.Walk(sync)
+			sync.Dump()
+		} else {
+			dst, err := backend.NewVaultBackend(viper.GetViper(), dstArgs)
+			if err != nil {
+				log.Fatal(err)
+			}
+			sync := &syncer{os.Stdout, dst}
+			src.Walk(sync)
 		}
-		sync := &syncer{os.Stdout, dst}
-		src.Walk(sync)
 	},
 }
 
@@ -44,4 +52,20 @@ type syncer struct {
 func (sync *syncer) Visit(s core.Secret) {
 	err := sync.dst.Write(s)
 	fmt.Fprintf(sync.out, "%s => %s (%v)\n", s.Path, s.Path, err)
+}
+
+type jsoner struct {
+	kv map[string]interface{}
+}
+
+func (j *jsoner) Visit(s core.Secret) {
+	j.kv[s.Path] = s.Value
+}
+
+func (j *jsoner) Dump() {
+	if b, err := json.Marshal(j.kv); err != nil {
+		log.Fatal(err)
+	} else {
+		fmt.Printf("%s\n", string(b[:]))
+	}
 }
