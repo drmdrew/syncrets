@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	// log.SetOutput(ioutil.Discard)
 	initViper(viper.GetViper(), "syncrets", getConfigFile())
 	initCobra()
 }

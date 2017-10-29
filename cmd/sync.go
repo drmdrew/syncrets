@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -30,9 +29,9 @@ var syncCmd = &cobra.Command{
 		}
 		dstArgs := args[1:2]
 		if strings.HasSuffix(dstArgs[0], ".json") {
-			sync := &jsoner{make(map[string]interface{})}
+			sync := backend.NewJSONEndpoint()
 			src.Walk(sync)
-			sync.Dump()
+			sync.Marshal(os.Stdout)
 		} else {
 			dst, err := backend.NewVaultBackend(viper.GetViper(), dstArgs)
 			if err != nil {
@@ -52,20 +51,4 @@ type syncer struct {
 func (sync *syncer) Visit(s core.Secret) {
 	err := sync.dst.Write(s)
 	fmt.Fprintf(sync.out, "%s => %s (%v)\n", s.Path, s.Path, err)
-}
-
-type jsoner struct {
-	kv map[string]interface{}
-}
-
-func (j *jsoner) Visit(s core.Secret) {
-	j.kv[s.Path] = s.Value
-}
-
-func (j *jsoner) Dump() {
-	if b, err := json.Marshal(j.kv); err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Printf("%s\n", string(b[:]))
-	}
 }
