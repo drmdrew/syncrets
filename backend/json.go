@@ -45,10 +45,12 @@ func (j *JSONEndpoint) Visit(s core.Secret) {
 }
 
 // Marshal ...
-func (j *JSONEndpoint) Marshal(out io.Writer) {
-	if b, err := json.Marshal(j.kv); err != nil {
-		log.Fatal(err)
-	} else {
-		fmt.Fprintf(out, "%s\n", string(b[:]))
+func (j *JSONEndpoint) Marshal(out io.Writer) error {
+	b, err := json.Marshal(j.kv)
+	if err != nil {
+		log.Print(err)
+		return err
 	}
+	fmt.Fprintf(out, "%s\n", string(b[:]))
+	return nil
 }

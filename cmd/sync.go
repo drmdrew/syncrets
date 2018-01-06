@@ -32,6 +32,10 @@ var syncCmd = &cobra.Command{
 			sync := backend.NewJSONEndpoint()
 			src.Walk(sync)
 			sync.Marshal(os.Stdout)
+		} else if strings.HasSuffix(dstArgs[0], ".ejson") {
+			sync := backend.NewEJSONEndpoint()
+			src.Walk(sync)
+			sync.Marshal(os.Stdout)
 		} else {
 			dst, err := backend.NewVaultBackend(viper.GetViper(), dstArgs)
 			if err != nil {

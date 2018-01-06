@@ -139,25 +139,26 @@ func (v *Vault) GetClient() VaultAPI {
 	return v.client
 }
 
-// GetClient returns a VaultAPI
+// GetURL ...
 func (v *Vault) GetURL() *url.URL {
 	return v.url
 }
 
-// GetClient returns a VaultAPI
+// GetRawURL ...
 func (v *Vault) GetRawURL() *url.URL {
 	return v.origURL
 }
 
 // prompt the user for information
-func (v *Vault) prompt(prompt string) string {
+func (v *Vault) prompt(prompt string) (string, error) {
 	log.Printf("Prompting for user input: %s\n", prompt)
 	fmt.Printf(prompt)
 	bytes, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {
-		log.Fatalf("Error reading response to prompt: %v\n", err)
+		log.Printf("Error reading response to prompt: %v\n", err)
+		return "", err
 	}
-	return string(bytes)
+	return string(bytes), nil
 }
 
 // Authenticate with the backend vault server
@@ -192,19 +193,26 @@ func (v *Vault) envAuth() {
 	v.client.SetToken(token)
 }
 
-func (v *Vault) tokenAuth() {
-	token := v.prompt("token: ")
-	v.client.SetToken(token)
+func (v *Vault) tokenAuth() error {
+	token, err := v.prompt("token: ")
+	if err == nil {
+		v.client.SetToken(token)
+	}
+	return nil
 }
 
-func (v *Vault) userpassAuth() {
+func (v *Vault) userpassAuth() error {
 	vkey := fmt.Sprintf("vault.%s.auth.username", v.name)
 	username := v.viper.GetString(vkey)
-	password := v.prompt("password: ")
-	err := v.client.UserpassLogin(username, password)
-	if err != nil {
-		log.Fatalf("Authentication failed: %v", err)
+	password, err := v.prompt("password: ")
+	if err == nil {
+		err = v.client.UserpassLogin(username, password)
 	}
+	if err != nil {
+		log.Printf("Authentication failed: %v", err)
+		return err
+	}
+	return nil
 }
 
 // IsValid checks if the session with the backend is still valid
@@ -226,6 +234,7 @@ func (v *Vault) IsValid() bool {
 	return *v.isValid
 }
 
+// Load ...
 func (v *Vault) Load() (string, error) {
 	// load vault token from token.file if one is present
 	vkey := fmt.Sprintf("vault.%s.token.file", v.name)
@@ -249,6 +258,7 @@ func (v *Vault) Load() (string, error) {
 	return token, nil
 }
 
+// Store ...
 func (v *Vault) Store() {
 	// store the vault token in token.file if one is present
 	vkey := fmt.Sprintf("vault.%s.token.file", v.name)
@@ -266,6 +276,7 @@ func (v *Vault) Store() {
 	log.Printf("Stored updated token in %s\n", tokenFile)
 }
 
+// Write ...
 func (src *Vault) Write(secret core.Secret) error {
 	data := map[string]interface{}{
 		"value": secret.Value,
@@ -274,6 +285,7 @@ func (src *Vault) Write(secret core.Secret) error {
 	return err
 }
 
+// Delete ...
 func (src *Vault) Delete(secret core.Secret) error {
 	_, err := src.GetClient().Delete(secret.Path)
 	return err
@@ -362,10 +374,12 @@ func NewVaultBackend(viper *viper.Viper, args []string) (*Vault, error) {
 	}
 	v.client = client
 	if err := v.Authenticate(); err != nil {
-		log.Fatalf("Authenication failed: %v", err)
+		log.Printf("Authenication failed: %v", err)
+		return nil, err
 	}
 	if !v.IsValid() {
-		log.Fatal("Authentication has failed!")
+		log.Print("Authentication has failed!")
+		return nil, err
 	}
 	log.Print("Authentication was successful")
 	v.Store()
