@@ -1,6 +1,8 @@
 syncrets
 debug
 debug.*
+secrets.json
+secrets.ejson
 .vault*
 .vscode/
 

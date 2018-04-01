@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,7 +11,7 @@ import (
 )
 
 func main() {
-	// log.SetOutput(ioutil.Discard)
+	log.SetOutput(ioutil.Discard)
 	initViper(viper.GetViper(), "syncrets", getConfigFile())
 	initCobra()
 }

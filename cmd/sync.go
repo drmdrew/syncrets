@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -17,6 +18,15 @@ func init() {
 	RootCmd.AddCommand(syncCmd)
 }
 
+func createFileAndWriter(s string) (*os.File, *bufio.Writer) {
+	f, err := os.Create(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w := bufio.NewWriter(f)
+	return f, w
+}
+
 var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Sync secrets from vault",
@@ -29,13 +39,19 @@ var syncCmd = &cobra.Command{
 		}
 		dstArgs := args[1:2]
 		if strings.HasSuffix(dstArgs[0], ".json") {
+			f, w := createFileAndWriter(dstArgs[0])
+			defer f.Close()
 			sync := backend.NewJSONEndpoint()
 			src.Walk(sync)
-			sync.Marshal(os.Stdout)
+			sync.Marshal(w)
+			w.Flush()
 		} else if strings.HasSuffix(dstArgs[0], ".ejson") {
+			f, w := createFileAndWriter(dstArgs[0])
+			defer f.Close()
 			sync := backend.NewEJSONEndpoint()
 			src.Walk(sync)
-			sync.Marshal(os.Stdout)
+			sync.Marshal(w)
+			w.Flush()
 		} else {
 			dst, err := backend.NewVaultBackend(viper.GetViper(), dstArgs)
 			if err != nil {

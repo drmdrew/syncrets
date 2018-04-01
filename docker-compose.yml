@@ -17,6 +17,9 @@ services:
             context: ./
             dockerfile: Dockerfile.vault-seed
         image: drmdrew/syncrets-vault-seed:latest
+        depends_on:
+            - vault-a
+            - vault-b
         environment:
             - VAULT_TOKEN=deadbeef-vault-a-root
             - VAULT_ADDR=http://vault-a:8200
