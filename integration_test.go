@@ -49,7 +49,8 @@ func dockerComposeSetup() {
 */
 
 func dockerComposeSetup(t *testing.T) {
-	execCommand(t, "docker-compose", []string{"up", "-d"})
+	output := execCommand(t, "docker-compose", []string{"up", "-d"})
+	log(output)
 }
 
 func TestIntegration_SyncretsList(t *testing.T) {
