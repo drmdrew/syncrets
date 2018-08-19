@@ -10,6 +10,7 @@ jobs:
     working_directory: /go/src/github.com/drmdrew/syncrets
     steps:
       - checkout
+      - setup_remote_docker
       - run:
           name: Update VERSION file
           command: |
@@ -21,3 +22,4 @@ jobs:
       - run: go get -v -t -d ./...
       - run: make build
       - run: go test -v ./...
+      - run: go test -tags=integration -run ^TestIntegration
