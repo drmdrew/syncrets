@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -50,7 +51,7 @@ func dockerComposeSetup() {
 
 func dockerComposeSetup(t *testing.T) {
 	output := execCommand(t, "docker-compose", []string{"up", "-d"})
-	log(output)
+	log.Println(output)
 }
 
 func TestIntegration_SyncretsList(t *testing.T) {
