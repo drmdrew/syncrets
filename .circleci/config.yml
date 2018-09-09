@@ -20,4 +20,5 @@ jobs:
               echo "Updating VERSION: $(cat VERSION)"
             fi
       - run: docker build -f Dockerfile.build -t drmdrew/syncrets-build:latest .
+      - run: mkdir testoutput/
       - run: docker-compose up integration-test

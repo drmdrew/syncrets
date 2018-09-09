@@ -6,8 +6,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -65,5 +67,22 @@ func TestIntegration_SyncretsList(t *testing.T) {
 			fmt.Fprintf(os.Stderr, "%d: expected '%v', got '%v'", i, expected[i], key)
 			t.FailNow()
 		}
+	}
+}
+
+func TestIntegration_SyncretsSyncToJSON(t *testing.T) {
+	actual := execCommand(t, "./syncrets", []string{"sync", "vault://vault-a/secret/", "testoutput/testOutputSyncToJSON.json"})
+	if len(actual) != 0 {
+		t.Fatalf("Expected no stdout, got: %v", actual)
+	}
+	bytes, err := ioutil.ReadFile("testoutput/testOutputSyncToJSON.json")
+	if err != nil {
+		t.Fatalf("Error reading output file: %v", err)
+	}
+	json := string(bytes)
+	jsonTrimmed := strings.TrimSpace(json)
+	expected := `{"secret":{"foo":{".":"bar","bar":"foobar"},"gilbert":"sullivan","it":{"was":{"the":{"best":{"of":{"times":"it was the worst of times"}}}}}}}`
+	if jsonTrimmed != expected {
+		t.Fatalf("JSON output not as expected: %v", json)
 	}
 }

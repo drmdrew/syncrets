@@ -3,6 +3,7 @@ debug
 debug.*
 secrets.json
 secrets.ejson
+testoutput/*
 .vault*
 .vscode/
 
