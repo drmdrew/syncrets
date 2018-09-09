@@ -5,10 +5,11 @@ but if you *do* use it I would love to hear what you think so please
 log issues for anything you would like to see fixed/improved.
 
 syncrets is a little utility for synchronizing secrets between systems like
-[Hashicorp vault][VAULT] and formats like ejson. Think of it like an
+[Hashicorp vault][VAULT] and formats like [ejson][EJSON]. Think of it like an
 _rsync for secrets_. Secrets need to be handled carefully and syncrets can
 help transfer, list, export, and otherwise manage secrets between systems
-and formats.
+and formats. The name `syncrets` is a portmanteau of `secrets` and `sync` ...
+obligatory [xkcd][XKCD-739].
 
 Here is a simple example of using syncrets to copy secrets between two
 vault servers running locally:
@@ -18,8 +19,8 @@ syncrets sync vault://vault-a/secrets/ vault://vault-b/secrets/
 
 ## syncrets config file
 
-To faciliate working with multiple vaults syncrets looks for a `syncrets.yml`
-in the working directory as well as `~/.syncrets/syncrets.yml`.
+To faciliate working with multiple vaults, syncrets looks for a `syncrets.yml`
+configuration file in the working directory as well as `~/.syncrets/syncrets.yml`.
 Here is an example:
 
 ```
@@ -38,14 +39,15 @@ vault:
             file: ~/.syncrets/.vault-b-token
 ```
 Using a configuration file allows you to refer to servers using the name
-(alias) present in their section of the configuration file.
+(alias) present in their section of the configuration file, so you can
+refer to `vault://vault-a/secrets` rather than `http://localhost:8200/secrets`.
 
 This example configuration file configures syncrets to reach `vault-a` using
 `http://localhost:8200` and to reach `vault-b` using `http://localhost:8201`
 which saves you from having to type out the full scheme, hostname, and port
-when building URLs to pass to syncrets. The configuration tells syncrets to
-load the vault token from file assuming that these tokens have been obtained
-previously.
+when building URLs to pass to syncrets. The configuration also tells syncrets to
+load vault auth tokens from file (assuming that these tokens have been obtained
+previously).
 
 ## syncrets ejson
 
@@ -104,3 +106,5 @@ syncrets rm vault://localhost:8200/secrets/
 *CAUTION*: Use the `rm` command _carefully_, it can be a potent footgun.
 
 [VAULT]: https://www.vaultproject.io/
+[EJSON]: https://github.com/Shopify/ejson
+[XKCD-739]: https://xkcd.com/739/
