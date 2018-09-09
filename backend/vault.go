@@ -296,14 +296,17 @@ func (src *Vault) Walk(visitor core.Visitor) {
 	var prefixes []string
 	path := src.GetPath()
 	prefixes = append(prefixes, path)
+	log.Printf("-> walk prefixes: %v\n", prefixes)
 	for len(prefixes) > 0 {
 		// pop a prefix from the front of the slice
 		var prefix string
 		prefix, prefixes = prefixes[0], prefixes[1:]
 		secret, err := src.GetClient().List(prefix)
 		if err != nil {
+			log.Printf("   -> list error: %v\n", err)
 			continue
 		}
+		log.Printf("   -> list prefix %v: %v\n", prefix, secret != nil)
 		if secret != nil {
 			for _, val := range secret.Data["keys"].([]interface{}) {
 				s := val.(string)
@@ -322,19 +325,38 @@ func (src *Vault) Walk(visitor core.Visitor) {
 					// ... so copy it to dst vault
 					value, err := src.GetClient().Read(path)
 					if value != nil {
-						//fmt.Printf("   -> value.Data['value']: %s\n", value.Data["value"])
 						data := value.Data
 						//bValue, bErr := dst.Vault.GetClient().Write(path, data)
 						secret := core.Secret{path, data["value"].(string)}
 						visitor.Visit(secret)
-						//fmt.Printf("   -> path=%s, secret=%v, err=%v\n", path, value, err)
+						log.Printf("       <- visited path=%s, err=%v\n", path, err)
 					} else {
-						fmt.Printf("   !! err: %v\n", err)
+						fmt.Printf("       !! err: %v\n", err)
 					}
 				}
 			}
 		}
+		// check if prefix itself is a leaf and has a secret value
+		leafSecret, leafErr := src.readSecret(prefix)
+		if leafErr != nil {
+			log.Printf("   -> readSecret prefix %v error: %v\n", prefix, leafErr)
+			continue
+		}
+		if leafSecret != nil {
+			log.Printf("   -> VISIT leaf prefix %v -> %v\n", prefix, leafSecret.Path)
+			visitor.Visit(*leafSecret)
+		}
 	}
+}
+
+func (v *Vault) readSecret(path string) (*core.Secret, error) {
+	value, err := v.GetClient().Read(path)
+	var secret *core.Secret
+	if err == nil && value != nil {
+		data := value.Data
+		secret = &core.Secret{path, data["value"].(string)}
+	}
+	return secret, err
 }
 
 func (v *Vault) resolveArgs(args []string) error {
