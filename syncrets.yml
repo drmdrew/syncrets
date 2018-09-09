@@ -18,4 +18,6 @@ vault:
             username: player1
         token:
             file: vault-b-token
+ejson:
+    public_key:   a9d52487a1232e5c292a9680f4a44a84ea302ba05ff12d2e9d11662d20fc0139
 

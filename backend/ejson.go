@@ -9,6 +9,7 @@ import (
 
 	"github.com/Shopify/ejson"
 	"github.com/drmdrew/syncrets/core"
+	"github.com/spf13/viper"
 )
 
 type EJSONEndpoint struct {
@@ -48,8 +49,8 @@ func (j *EJSONEndpoint) Visit(s core.Secret) {
 func (j *EJSONEndpoint) Marshal(out io.Writer) error {
 	var jsonBytes []byte
 	var err error
-	// TODO: configurable ejson public key
-	j.kv["_public_key"] = "a9d52487a1232e5c292a9680f4a44a84ea302ba05ff12d2e9d11662d20fc0139"
+	ejsonPubkey := viper.GetString("ejson.public_key")
+	j.kv["_public_key"] = ejsonPubkey
 	if jsonBytes, err = json.Marshal(j.kv); err != nil {
 		log.Printf("ERROR: %v\n", err)
 		return err
