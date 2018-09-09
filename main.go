@@ -22,10 +22,6 @@ func initCobra() {
 	}
 }
 
-func getConfigFile() string {
-	return filepath.Join(os.Getenv("HOME"), ".syncrets")
-}
-
 func initViper(v *viper.Viper, name string, configDir string) *viper.Viper {
 	v.SetConfigName(name)
 	v.AddConfigPath(configDir)

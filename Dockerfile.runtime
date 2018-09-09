@@ -1,0 +1,3 @@
+FROM scratch
+COPY --from=drmdrew/syncrets-build /go/src/github.com/drmdrew/syncrets/syncrets /syncrets
+CMD ["/syncrets"]

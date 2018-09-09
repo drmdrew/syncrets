@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -48,14 +47,15 @@ func dockerComposeSetup() {
 	}
 }
 */
-
+/*
 func dockerComposeSetup(t *testing.T) {
 	output := execCommand(t, "docker-compose", []string{"up", "-d"})
 	log.Println(output)
 }
+*/
 
 func TestIntegration_SyncretsList(t *testing.T) {
-	dockerComposeSetup(t)
+	// dockerComposeSetup(t)
 	expected := []string{
 		"/secret/foo", "/secret/gilbert", "/secret/foo/bar", "/secret/it/was/the/best/of/times",
 	}
