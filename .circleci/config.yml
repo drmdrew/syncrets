@@ -19,7 +19,5 @@ jobs:
               (cat VERSION.orig | sed s/BUILD/${CIRCLE_BUILD_NUM}/g) > VERSION
               echo "Updating VERSION: $(cat VERSION)"
             fi
-      - run: go get -v -t -d ./...
-      - run: make build
-      - run: go test -v ./...
+      - run: docker build -f Dockerfile.build -t drmdrew/syncrets-build:latest .
       - run: docker-compose up integration-test
