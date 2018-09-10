@@ -20,10 +20,9 @@ func NewJSONEndpoint() *JSONEndpoint {
 	return &JSONEndpoint{make(map[string]interface{})}
 }
 
-// Visit ...
-func (j *JSONEndpoint) Visit(s core.Secret) {
+// AddSecretToKV ...
+func AddSecretToKV(s core.Secret, kv map[string]interface{}) {
 	steps := strings.Split(s.Path, "/")
-	var kv = j.kv
 	for _, step := range steps[:len(steps)-1] {
 		if step == "" {
 			continue
@@ -42,6 +41,11 @@ func (j *JSONEndpoint) Visit(s core.Secret) {
 	}
 	lastStep := steps[len(steps)-1]
 	kv[lastStep] = s.Value
+}
+
+// Visit ...
+func (j *JSONEndpoint) Visit(s core.Secret) {
+	AddSecretToKV(s, j.kv)
 }
 
 // Marshal ...

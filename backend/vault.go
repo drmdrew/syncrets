@@ -395,12 +395,8 @@ func NewVaultBackend(viper *viper.Viper, args []string) (*Vault, error) {
 		return nil, err
 	}
 	v.client = client
-	if err := v.Authenticate(); err != nil {
+	if err := v.Authenticate(); err != nil || !v.IsValid() {
 		log.Printf("Authenication failed: %v", err)
-		return nil, err
-	}
-	if !v.IsValid() {
-		log.Print("Authentication has failed!")
 		return nil, err
 	}
 	log.Print("Authentication was successful")

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"strings"
 
 	"github.com/Shopify/ejson"
 	"github.com/drmdrew/syncrets/core"
@@ -23,26 +22,7 @@ func NewEJSONEndpoint() *EJSONEndpoint {
 
 // Visit ...
 func (j *EJSONEndpoint) Visit(s core.Secret) {
-	steps := strings.Split(s.Path, "/")
-	var kv = j.kv
-	for _, step := range steps[:len(steps)-1] {
-		if step == "" {
-			continue
-		}
-		if _, ok := kv[step]; !ok {
-			kv[step] = make(map[string]interface{})
-		}
-		if m, ok := kv[step].(map[string]interface{}); !ok {
-			m = make(map[string]interface{})
-			m["."] = kv[step]
-			kv[step] = m
-			kv = m
-		} else {
-			kv = m
-		}
-	}
-	lastStep := steps[len(steps)-1]
-	kv[lastStep] = s.Value
+	AddSecretToKV(s, j.kv)
 }
 
 // Marshal ...
