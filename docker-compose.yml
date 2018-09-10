@@ -1,13 +1,13 @@
 version: "3"
 services:
     vault-a:
-        image: vault:latest
+        image: vault:0.9.6
         environment:
             - VAULT_DEV_ROOT_TOKEN_ID=deadbeef-vault-a-root
         ports:
             - 8201:8200
     vault-b: 
-        image: vault:latest
+        image: vault:0.9.6
         environment:
             - VAULT_DEV_ROOT_TOKEN_ID=abbaface-vault-b-root
         ports:
@@ -17,7 +17,20 @@ services:
             context: ./
             dockerfile: Dockerfile.vault-seed
         image: drmdrew/syncrets-vault-seed:latest
+        depends_on:
+            - vault-a
+            - vault-b
         environment:
             - VAULT_TOKEN=deadbeef-vault-a-root
             - VAULT_ADDR=http://vault-a:8200
+    integration-test:
+        build:
+            context: ./
+            dockerfile: Dockerfile.test
+        image: drmdrew/syncrets-integration-test:latest
+        depends_on:
+            - vault-a-seed
+            - vault-a
+            - vault-b
+
 

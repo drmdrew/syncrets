@@ -1,0 +1,6 @@
+FROM golang:1.10-alpine AS build
+RUN apk --no-cache add git make
+WORKDIR /go/src/github.com/drmdrew/syncrets
+COPY . .
+RUN go get -v ./...
+RUN make build

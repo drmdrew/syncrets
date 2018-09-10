@@ -1,0 +1,9 @@
+FROM drmdrew/syncrets-build
+
+WORKDIR /go/src/github.com/drmdrew/syncrets
+
+COPY integration_test.go .
+COPY testdata/syncrets-integration.yml syncrets.yml
+RUN go get -t ./...
+
+CMD go test -tags=integration -run ^TestIntegration

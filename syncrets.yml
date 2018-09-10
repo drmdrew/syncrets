@@ -1,20 +1,23 @@
 vault:
     vault-a:
-        url: http://localhost:8201
-        auth: 
+        url: "http://localhost:8201"
+        auth:
             method: token
         token:
             file: vault-a-token
     vault-b:
-        url: http://localhost:8202
+        url: "http://localhost:8202"
         auth:
             method: token
         token:
             file: vault-b-token
     vault-b-user:
-        url: http://localhost:8202
+        url: "http://localhost:8202"
         auth:
             method: userpass
             username: player1
         token:
             file: vault-b-token
+ejson:
+    public_key:   a9d52487a1232e5c292a9680f4a44a84ea302ba05ff12d2e9d11662d20fc0139
+

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	initViper(viper.GetViper(), "syncrets", getConfigFile())
+	initViper(viper.GetViper(), "syncrets", ".")
 	initCobra()
 }
 
@@ -20,16 +20,13 @@ func initCobra() {
 	}
 }
 
-func getConfigFile() string {
-	return filepath.Join(os.Getenv("HOME"), ".syncrets")
-}
-
-func initViper(v *viper.Viper, name string, path string) *viper.Viper {
+func initViper(v *viper.Viper, name string, configDir string) *viper.Viper {
 	v.SetConfigName(name)
-	v.AddConfigPath(path)
+	v.AddConfigPath(configDir)
+	v.AddConfigPath(filepath.Join(os.Getenv("HOME"), ".syncrets"))
 	err := v.ReadInConfig()
 	if err != nil {
-		log.Printf("No config file found %s on path %s. Using defaults\n", name, path)
+		log.Printf("No config file found %s. Using defaults\n", name)
 	}
 	return v
 }

@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/drmdrew/syncrets/backend"
 	"github.com/drmdrew/syncrets/core"
@@ -14,6 +16,15 @@ import (
 
 func init() {
 	RootCmd.AddCommand(syncCmd)
+}
+
+func createFileAndWriter(s string) (*os.File, *bufio.Writer) {
+	f, err := os.Create(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w := bufio.NewWriter(f)
+	return f, w
 }
 
 var syncCmd = &cobra.Command{
@@ -27,12 +38,28 @@ var syncCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 		dstArgs := args[1:2]
-		dst, err := backend.NewVaultBackend(viper.GetViper(), dstArgs)
-		if err != nil {
-			log.Fatal(err)
+		if strings.HasSuffix(dstArgs[0], ".json") {
+			f, w := createFileAndWriter(dstArgs[0])
+			defer f.Close()
+			sync := backend.NewJSONEndpoint()
+			src.Walk(sync)
+			sync.Marshal(w)
+			w.Flush()
+		} else if strings.HasSuffix(dstArgs[0], ".ejson") {
+			f, w := createFileAndWriter(dstArgs[0])
+			defer f.Close()
+			sync := backend.NewEJSONEndpoint()
+			src.Walk(sync)
+			sync.Marshal(w)
+			w.Flush()
+		} else {
+			dst, err := backend.NewVaultBackend(viper.GetViper(), dstArgs)
+			if err != nil {
+				log.Fatal(err)
+			}
+			sync := &syncer{os.Stdout, dst}
+			src.Walk(sync)
 		}
-		sync := &syncer{os.Stdout, dst}
-		src.Walk(sync)
 	},
 }
 
